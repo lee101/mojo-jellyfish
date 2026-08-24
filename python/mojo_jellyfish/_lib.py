@@ -5,10 +5,17 @@ from __future__ import annotations
 import ctypes
 import os
 import subprocess
+import sysconfig
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LIB = os.environ.get("MOJO_JELLYFISH_LIB") or os.path.join(
     ROOT, "dist", "libmojo-jellyfish.so"
+)
+NATIVE = os.path.join(
+    ROOT,
+    "python",
+    "mojo_jellyfish",
+    "_native" + sysconfig.get_config_var("EXT_SUFFIX"),
 )
 
 I = ctypes.c_int64
@@ -41,13 +48,18 @@ class BuildError(RuntimeError):
 
 def build(force: bool = False) -> str:
     source = os.path.join(ROOT, "src", "kernels.mojo")
-    if not force and os.path.exists(LIB) and os.path.getmtime(LIB) >= os.path.getmtime(source):
+    native_source = os.path.join(ROOT, "python", "mojo_jellyfish", "_native.c")
+    oldest_output = min(
+        os.path.getmtime(path) if os.path.exists(path) else 0 for path in (LIB, NATIVE)
+    )
+    newest_source = max(os.path.getmtime(source), os.path.getmtime(native_source))
+    if not force and oldest_output >= newest_source:
         return LIB
     script = os.path.join(ROOT, "build", "build.sh")
     proc = subprocess.run(
         ["bash", script], cwd=ROOT, capture_output=True, text=True, timeout=1800
     )
-    if proc.returncode != 0 or not os.path.exists(LIB):
+    if proc.returncode != 0 or not os.path.exists(LIB) or not os.path.exists(NATIVE):
         raise BuildError((proc.stderr or proc.stdout).strip()[:8000])
     return LIB
 

@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import ctypes
 import unicodedata
 from typing import Optional
 
 import numpy as np
 import regex
 
-from ._lib import addr, lib
+from ._lib import addr, build, lib
+
+build()
+from . import _native
 
 __all__ = [
     "damerau_levenshtein_distance",
@@ -195,39 +197,22 @@ def jaccard_similarity(
     return intersection / union_size if union_size else 0.0
 
 
-def soundex(s: str) -> str:
-    s = _require_string(s, "s")
-    if not s:
-        return ""
-    if s.isascii():
-        source = s.upper().encode("ascii")
-        packed = int(lib().mj_soundex_ascii_packed(source, len(source)))
-        return packed.to_bytes(4, "little").decode("ascii")
+def _soundex_unicode(s: str) -> str:
     source = _codepoints(s, normalize=True)
     dest = np.empty(4, dtype=np.uint32)
     length = lib().mj_soundex(addr(source), len(source), addr(dest))
     return _decode(dest, length)
 
 
-def metaphone(s: str) -> str:
-    s = _require_string(s, "s")
-    if not s:
-        return ""
-    if s.isascii():
-        source = s.upper().encode("ascii")
-        if len(source) <= 32:
-            packed = int(lib().mj_metaphone_ascii_packed(source, len(source)))
-            if packed >> 63 == 0:
-                encoded = packed.to_bytes(8, "little")
-                end = encoded.find(b"\0")
-                return encoded[: end if end >= 0 else 8].decode("ascii")
-        dest = ctypes.create_string_buffer(max(2 * len(source) + 1, 1))
-        length = lib().mj_metaphone_ascii(source, len(source), dest)
-        return dest.raw[:length].decode("ascii")
+def _metaphone_unicode(s: str) -> str:
     source = _codepoints(s, normalize=True)
     dest = np.empty(max(2 * len(source) + 1, 1), dtype=np.uint32)
     length = lib().mj_metaphone(addr(source), len(source), addr(dest))
     return _decode(dest, length)
+
+
+soundex = _native.soundex
+metaphone = _native.metaphone
 
 
 def nysiis(s: str) -> str:

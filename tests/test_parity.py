@@ -191,6 +191,14 @@ def test_metaphone_parity(value):
 
 @pytest.mark.parametrize(
     "value",
+    ["a" * 7 + "schmidt" * 8, "mixed CASE metaphone input" * 6],
+)
+def test_metaphone_ascii_long_output_parity(value):
+    assert mojo.metaphone(value) == upstream.metaphone(value)
+
+
+@pytest.mark.parametrize(
+    "value",
     [
         "",
         "John",

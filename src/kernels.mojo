@@ -48,6 +48,10 @@ def is_iey(c: UInt32) -> Bool:
     return c == 73 or c == 69 or c == 89
 
 
+def ascii_upper(c: UInt8) -> UInt8:
+    return c - 32 if c >= 97 and c <= 122 else c
+
+
 def starts2(s: U32Ptr, n: Int, a: UInt32, b: UInt32) -> Bool:
     return n >= 2 and s[0] == a and s[1] == b
 
@@ -436,11 +440,13 @@ def soundex_kernel(s: U32Ptr, n: Int, dest: U32Ptr) -> Int:
 
 
 def soundex_ascii_packed(s: U8Ptr, n: Int) -> UInt32:
-    var result = UInt32(s[0])
+    var first = ascii_upper(s[0])
+    var result = UInt32(first)
     var written = 1
-    var previous = replacement(UInt32(s[0]))
+    var previous = replacement(UInt32(first))
     for i in range(1, n):
-        var code = replacement(UInt32(s[i]))
+        var current = ascii_upper(s[i])
+        var code = replacement(UInt32(current))
         if code != 42:
             if code != previous:
                 result |= code << UInt32(8 * written)
@@ -448,7 +454,7 @@ def soundex_ascii_packed(s: U8Ptr, n: Int) -> UInt32:
                 if written == 4:
                     return result
             previous = code
-        elif s[i] != 72 and s[i] != 87:
+        elif current != 72 and current != 87:
             previous = 42
     while written < 4:
         result |= UInt32(48) << UInt32(8 * written)
@@ -603,29 +609,29 @@ def metaphone_ascii_kernel(s: U8Ptr, n: Int, dest: U8Ptr) -> Int:
         return 0
     var start = 0
     if (
-        (n >= 2 and s[0] == 75 and s[1] == 78)
-        or (n >= 2 and s[0] == 71 and s[1] == 78)
-        or (n >= 2 and s[0] == 80 and s[1] == 78)
-        or (n >= 2 and s[0] == 87 and s[1] == 82)
-        or (n >= 2 and s[0] == 65 and s[1] == 69)
+        (n >= 2 and ascii_upper(s[0]) == 75 and ascii_upper(s[1]) == 78)
+        or (n >= 2 and ascii_upper(s[0]) == 71 and ascii_upper(s[1]) == 78)
+        or (n >= 2 and ascii_upper(s[0]) == 80 and ascii_upper(s[1]) == 78)
+        or (n >= 2 and ascii_upper(s[0]) == 87 and ascii_upper(s[1]) == 82)
+        or (n >= 2 and ascii_upper(s[0]) == 65 and ascii_upper(s[1]) == 69)
     ):
         start = 1
     var written = 0
     var i = start
     while i < n:
-        var c = UInt32(s[i])
-        var nxt: UInt32 = UInt32(s[i + 1]) if i + 1 < n else 42
-        var nxt2: UInt32 = UInt32(s[i + 2]) if i + 2 < n else 42
+        var c = UInt32(ascii_upper(s[i]))
+        var nxt: UInt32 = UInt32(ascii_upper(s[i + 1])) if i + 1 < n else 42
+        var nxt2: UInt32 = UInt32(ascii_upper(s[i + 2])) if i + 2 < n else 42
         if c == nxt and c != 67:
             i += 1
             continue
 
         if is_vowel(c):
-            if i == start or (i > 0 and s[i - 1] == 32):
+            if i == start or (i > 0 and ascii_upper(s[i - 1]) == 32):
                 dest[written] = UInt8(c)
                 written += 1
         elif c == 66:
-            if (i == start or s[i - 1] != 77) or nxt != 42:
+            if (i == start or ascii_upper(s[i - 1]) != 77) or nxt != 42:
                 dest[written] = 66
                 written += 1
         elif c == 67:
@@ -665,12 +671,12 @@ def metaphone_ascii_kernel(s: U8Ptr, n: Int, dest: U8Ptr) -> Int:
                 written += 1
         elif c == 72:
             if i == start or is_vowel(nxt) or (
-                i > 0 and not is_vowel(UInt32(s[i - 1]))
+                i > 0 and not is_vowel(UInt32(ascii_upper(s[i - 1])))
             ):
                 dest[written] = 72
                 written += 1
         elif c == 75:
-            if i == start or s[i - 1] != 67:
+            if i == start or ascii_upper(s[i - 1]) != 67:
                 dest[written] = 75
                 written += 1
         elif c == 80:

@@ -75,7 +75,7 @@ both Jaro-Winkler modes, accented names, combining sequences, flags, Indic
 clusters, and multi-code-point emoji. On the pinned environment:
 
 ```text
-119 passed in 0.61s
+121 passed in 0.80s
 ```
 
 ## Benchmarks
@@ -90,21 +90,21 @@ Python 3.13.14.
 
 | case | mojo-jellyfish | jellyfish | upstream / Mojo |
 | --- | ---: | ---: | ---: |
-| Levenshtein, 10-char names | 1.8 us | 2.2 us | 1.24x faster |
-| Levenshtein, 2,048 chars | 7.96 ms | 37.46 ms | 4.71x faster |
-| Damerau-Levenshtein, 512 chars | 1.93 ms | 13.19 ms | 6.82x faster |
-| Jaro-Winkler, 2,000 chars | 1.38 ms | 2.28 ms | 1.66x faster |
-| Hamming, 1,000,000 chars | 2.27 ms | 141.26 ms | 62.11x faster |
-| Jaccard words, 100,000 tokens | 9.14 ms | 19.83 ms | 2.17x faster |
-| Soundex, one name | 1.3 us | 425.7 ns | 0.34x slower |
-| Metaphone, one name | 1.7 us | 508.3 ns | 0.31x slower |
+| Levenshtein, 10-char names | 1.8 us | 2.3 us | 1.22x faster |
+| Levenshtein, 2,048 chars | 5.96 ms | 33.40 ms | 5.60x faster |
+| Damerau-Levenshtein, 512 chars | 1.31 ms | 6.80 ms | 5.17x faster |
+| Jaro-Winkler, 2,000 chars | 1.02 ms | 1.64 ms | 1.61x faster |
+| Hamming, 1,000,000 chars | 1.30 ms | 109.10 ms | 83.72x faster |
+| Jaccard words, 100,000 tokens | 4.87 ms | 21.62 ms | 4.44x faster |
+| Soundex, one name | 136.7 ns | 391.6 ns | 2.87x faster |
+| Metaphone, one name | 238.4 ns | 463.3 ns | 1.94x faster |
 
 Short ASCII Levenshtein now uses byte inputs, stack scratch, and SIMD
 prefix/suffix trimming. ASCII word Jaccard builds two exact open-addressed
-token sets concurrently above 256 KiB and falls back to Python if its bounded
-scratch table fills. Packed ASCII phonetic results avoid NumPy output buffers,
-although the fixed `ctypes` call still leaves one-name Soundex and Metaphone
-slower than upstream.
+token sets and falls back to Python if its bounded scratch table fills. A thin
+CPython ABI bridge passes compact ASCII string storage directly to Mojo without
+copying. Mojo folds ASCII case during the scan and returns packed phonetic
+results, avoiding both temporary encoded strings and `ctypes` call overhead.
 
 There is no GPU path. These kernels either move substantially more data than
 arithmetic they perform or depend on sequential dynamic-programming state,
