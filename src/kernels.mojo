@@ -1,6 +1,5 @@
 """String-distance and phonetic kernels exposed through a small C ABI."""
 
-from std.algorithm import parallelize
 from std.memory import stack_allocation
 from std.sys import simd_width_of
 
@@ -261,22 +260,8 @@ def jaccard_ascii_words(
     slots: Int,
 ) -> Float64:
     var counts = stack_allocation[2, DType.int64]()
-    if n + m >= 262144:
-        @parameter
-        def build(index: Int):
-            if index == 0:
-                counts[0] = Int64(
-                    build_word_set(a, n, starts_a, lengths_a, slots)
-                )
-            else:
-                counts[1] = Int64(
-                    build_word_set(b, m, starts_b, lengths_b, slots)
-                )
-
-        parallelize[build](2, 2)
-    else:
-        counts[0] = Int64(build_word_set(a, n, starts_a, lengths_a, slots))
-        counts[1] = Int64(build_word_set(b, m, starts_b, lengths_b, slots))
+    counts[0] = Int64(build_word_set(a, n, starts_a, lengths_a, slots))
+    counts[1] = Int64(build_word_set(b, m, starts_b, lengths_b, slots))
 
     var count_a = Int(counts[0])
     var count_b = Int(counts[1])
