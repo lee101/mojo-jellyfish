@@ -104,7 +104,7 @@ def levenshtein_ascii(
     var an = n
     var bm = m
     while an - a0 >= W and bm - b0 >= W:
-        if a.load[width=W](a0) != b.load[width=W](b0):
+        if a.unsafe_load[width=W](a0) != b.unsafe_load[width=W](b0):
             break
         a0 += W
         b0 += W
@@ -112,7 +112,7 @@ def levenshtein_ascii(
         a0 += 1
         b0 += 1
     while an - a0 >= W and bm - b0 >= W:
-        if a.load[width=W](an - W) != b.load[width=W](bm - W):
+        if a.unsafe_load[width=W](an - W) != b.unsafe_load[width=W](bm - W):
             break
         an -= W
         bm -= W
@@ -165,7 +165,7 @@ def words_equal(
     comptime W = simd_width_of[DType.float64]()
     var i = 0
     while i + W <= length:
-        if a.load[width=W](a_start + i) != b.load[width=W](b_start + i):
+        if a.unsafe_load[width=W](a_start + i) != b.unsafe_load[width=W](b_start + i):
             return False
         i += W
     while i < length:
